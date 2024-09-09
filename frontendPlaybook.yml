@@ -3,10 +3,10 @@
   hosts: frontend
   become: yes
   vars:
-    host: "http://{{ ansible_host }}"
+    host: "http://{{ public_ip }}"
     domain_name: "simplesite.com"
     root_dir: "/var/www/{{ domain_name }}"
-    backend_ip: "{{ hostvars['backend']['ansible_host'] }}"
+    backend_ip: "{{ hostvars['backend']['private_ip'] }}"
 
   pre_tasks:
     - name: Update all packages

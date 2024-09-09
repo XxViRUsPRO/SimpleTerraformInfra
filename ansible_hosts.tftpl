@@ -1,8 +1,8 @@
 [public]
-frontend ansible_host=${pub_ip_front}
+frontend public_ip=${pub_ip_front}
 
 [private]
-backend ansible_host=${prv_ip_back}
+backend private_ip=${prv_ip_back}
 
 [all:vars]
 ansible_user=ec2-user
