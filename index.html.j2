@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/spectre.css/dist/spectre.min.css"
+    />
+    <title>Simple WebApp</title>
+    <style>
+      body {
+        max-width: 768px;
+        margin: 0 auto;
+      }
+      main {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100dvh;
+        padding: 2rem 1rem !important;
+      }
+      tbody {
+        display: block;
+        height: 16rem;
+        overflow-y: auto;
+      }
+      thead,
+      tbody tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+      }
+      tbody tr > *:nth-child(2) {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        border-radius: 9999px;
+        background-color: rgba(111, 120, 135, 0.5);
+        border: 1px;
+        border-color: transparent;
+        border-style: solid;
+        background-clip: padding-box;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <div>
+        <h1>Simple WebApp</h1>
+        <div>
+          <h2>Posts</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Content</th>
+                <th>Author</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <form
+        class="form-horizontal card"
+        action="{{ host }}/api/posts"
+        method="POST"
+      >
+        <div class="card-header">
+          <div class="card-title h5">New Post</div>
+          <div class="card-subtitle text-gray">Create a new post</div>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label" for="title">Title </label>
+            <input class="form-input" type="text" id="title" name="title" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="content">Content </label>
+            <textarea
+              class="form-input"
+              id="content"
+              name="content"
+              rows="3"
+              style="resize: none"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="author">Author </label>
+            <input class="form-input" type="text" id="author" name="author" />
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-lg" type="submit">Submit</button>
+        </div>
+      </form>
+    </main>
+    <script>
+      (() => {
+        const TIMEOUT = 3000;
+        const tbody = document.querySelector("tbody");
+        function toast({ message = "", type = "", duration = 3000 }) {
+          const div = document.createElement("div");
+          div.className = `toast toast-${type}`;
+          div.textContent = message;
+          div.style = `position: fixed; top: 1rem; right: 1rem; z-index: 9999; width: auto; padding: 1rem; transition: all 0.5s ease; opacity: 0; transform: translateX(100%);`;
+          document.body.appendChild(div);
+          setTimeout(() => {
+            div.style = `position: fixed; top: 1rem; right: 1rem; z-index: 9999; width: auto; padding: 1rem; transition: all 0.5s ease; opacity: 1; transform: translateX(0%);`;
+          }, 100);
+          setTimeout(() => {
+            div.style = `position: fixed; top: 1rem; right: 1rem; z-index: 9999; width: auto; padding: 1rem; transition: all 0.5s ease; opacity: 0; transform: translateX(100%);`;
+            setTimeout(() => document.body.removeChild(div), 500);
+          }, duration + 600);
+        }
+        function newPost(post) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+          <td>${post.title || "No Title"}</td>
+          <td>${post.content || "No Content"}</td>
+          <td>${post.author || "No Author"}</td>
+          <td>
+            <button>Delete</button>
+          </td>
+          `;
+          tr.querySelector("button").addEventListener("click", () => {
+            const xhr = new XMLHttpRequest();
+            xhr.onload = () => {
+              if (xhr.status !== 200) return;
+              tbody.removeChild(tr);
+            };
+            xhr.open("DELETE", `{{ host }}/api/posts/${post.id}`);
+            xhr.send();
+          });
+          tbody.appendChild(tr);
+        }
+        function fetchPosts() {
+          const xhr = new XMLHttpRequest();
+          xhr.onload = () => {
+            const posts = JSON.parse(xhr.responseText);
+            posts.forEach((post) => {
+              newPost(post);
+            });
+          };
+          xhr.ontimeout = () => {
+            toast({ message: "Request Timed Out", type: "error" });
+          };
+          xhr.timeout = TIMEOUT;
+          xhr.open("GET", "{{ host }}/api/posts");
+          xhr.send();
+        }
+        fetchPosts();
+        function addPost(e) {
+          e.preventDefault();
+          const title = document.querySelector("#title").value;
+          const content = document.querySelector("#content").value;
+          const author = document.querySelector("#author").value;
+          const xhr = new XMLHttpRequest();
+          xhr.onload = () => {
+            if (xhr.status !== 201) return;
+            const post = JSON.parse(xhr.responseText);
+            newPost(post);
+          };
+          xhr.ontimeout = () => {
+            toast({ message: "Request Timed Out", type: "error" });
+          };
+          xhr.timeout = TIMEOUT;
+          xhr.open("POST", "{{ host }}/api/posts");
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.send(JSON.stringify({ title, content, author }));
+        }
+        document.querySelector("form").addEventListener("submit", addPost);
+      })();
+    </script>
+  </body>
+</html>

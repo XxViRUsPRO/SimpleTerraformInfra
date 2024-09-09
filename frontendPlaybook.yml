@@ -1,0 +1,59 @@
+---
+- name: Setup frontend server
+  hosts: frontend
+  become: yes
+  vars:
+    host: "http://{{ ansible_host }}"
+    domain_name: "simplesite.com"
+    root_dir: "/var/www/{{ domain_name }}"
+    backend_ip: "{{ hostvars['backend']['ansible_host'] }}"
+
+  pre_tasks:
+    - name: Update all packages
+      dnf:
+        name: "*"
+        state: latest
+
+    - name: Install Nginx
+      dnf:
+        name: nginx
+        state: present
+      notify: Restart Nginx
+
+  post_tasks:
+    - name: Ensure {{ root_dir }} exists
+      file:
+        path: "{{ root_dir }}"
+        state: directory
+        mode: 0755
+
+    - name: Create index.html
+      template:
+        src: index.html.j2
+        dest: "{{ root_dir }}/index.html"
+        mode: 0644
+      notify: Restart Nginx
+
+    - name: Create Nginx configuration file
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/conf.d/{{ domain_name }}.conf
+        mode: 0644
+      notify: Restart Nginx
+
+    - name: Ensure Nginx is running
+      service:
+        name: nginx
+        state: started
+      register: nginx_status
+
+    - name: Display Nginx status
+      debug:
+        msg: "Nginx status: {{ nginx_status.state }}"
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+        enabled: yes

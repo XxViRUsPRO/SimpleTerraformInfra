@@ -1,0 +1,11 @@
+Host frontend
+    HostName ${pub_ip_front}
+    User ec2-user
+    IdentityFile ${filename}
+    ForwardAgent yes
+
+Host backend
+    HostName ${prv_ip_back}
+    User ec2-user
+    ProxyCommand ssh -W %h:%p frontend
+    IdentityFile ${filename}

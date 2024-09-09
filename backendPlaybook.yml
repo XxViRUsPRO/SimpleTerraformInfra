@@ -1,0 +1,24 @@
+---
+- name: Setup backend server
+  hosts: backend
+  become: yes
+
+  roles:
+    - backend
+
+  pre_tasks:
+    - name: Update all packages
+      dnf:
+        name: "*"
+        state: latest
+
+  post_tasks:
+    - name: Check if Docker Compose service is running
+      systemd:
+        name: dcas
+        state: started
+      register: docker_compose_status
+
+    - name: Display Docker Compose service status
+      debug:
+        msg: "Docker Compose service status: {{ docker_compose_status.state }}"

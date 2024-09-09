@@ -1,0 +1,6 @@
+---
+# vars file for backend
+springboot_repo: "https://github.com/XxViRUsPRO/SpringBootSimpleRestApi.git"
+springboot_version: main
+springboot_app_path: "/opt/springboot-app"
+springboot_jar_name: "myserver-0.0.1-SNAPSHOT.jar"

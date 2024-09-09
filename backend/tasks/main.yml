@@ -1,0 +1,68 @@
+---
+# tasks file for backend
+- name: Check if Docker is installed else fail
+  command: docker --version
+  register: docker_version
+  failed_when: docker_version.rc != 0
+
+- name: Get manchine OS
+  command: uname -s
+  register: os_name
+
+- name: Get machine architecture
+  command: uname -m
+  register: os_arch
+
+- name: Download Docker Compose
+  get_url:
+    url: "https://github.com/docker/compose/releases/latest/download/docker-compose-{{ os_name.stdout | lower }}-{{ os_arch.stdout }}"
+    dest: /usr/local/bin/docker-compose
+    mode: "0755"
+  when: os_name.stdout == "Linux"
+
+- name: Verify Docker Compose installation
+  command: docker-compose --version
+  register: docker_compose_version
+  failed_when: docker_compose_version.rc != 0
+
+- name: Install git
+  dnf:
+    name: git
+    state: present
+
+- name: Clone SpringBoot application
+  git:
+    repo: "{{ springboot_repo }}"
+    dest: "{{ springboot_app_path }}"
+    version: "{{ springboot_version }}"
+    force: yes
+
+- name: Generate MySQL root password
+  shell: "openssl rand -base64 12"
+  register: mysql_root_password
+
+- name: Show MySQL root password
+  debug:
+    msg: "MySQL root password: {{ mysql_root_password.stdout }}"
+
+- name: Set MySQL root password in .env file
+  lineinfile:
+    path: "{{ springboot_app_path }}/.env"
+    line: "MYSQL_ROOT_PASSWORD={{ mysql_root_password.stdout }}"
+    create: yes
+
+- name: Copy Docker Compose systemd service file
+  template:
+    src: dcas.service.j2
+    dest: /etc/systemd/system/dcas.service
+    mode: "0644"
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start Docker Compose service
+  systemd:
+    name: dcas
+    enabled: yes
+    state: started

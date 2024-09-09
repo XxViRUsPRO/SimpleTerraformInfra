@@ -1,0 +1,6 @@
+---
+# handlers file for backend
+- name: restart springboot
+  systemd:
+    name: springboot
+    state: restarted
